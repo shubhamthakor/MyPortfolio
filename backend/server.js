@@ -97,18 +97,17 @@ app.post('/api/contact', async (req, res) => {
       })
     }
 
-    // Send email
     await sendEmail(name, email, message)
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Message sent successfully',
     })
   } catch (err) {
-    console.error('❌ Contact error:', err)
+    console.error('❌ Contact error:', err.message)
 
-    res.status(500).json({
-      error: 'Server error',
+    return res.status(500).json({
+      error: err.message,
     })
   }
 })
