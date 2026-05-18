@@ -1,0 +1,160 @@
+const express  = require('express')
+const mongoose = require('mongoose')
+const cors     = require('cors')
+const nodemailer = require('nodemailer')
+require('dotenv').config()
+
+const app = express()
+
+// ── Middleware ──────────────────────────────────────────
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000', process.env.FRONTEND_URL || '*'],
+  credentials: true,
+}))
+app.use(express.json())
+
+// ── MongoDB ─────────────────────────────────────────────
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/portfolio')
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB error:', err))
+
+// ── Message Model ───────────────────────────────────────
+const MessageSchema = new mongoose.Schema({
+  name:      { type: String, required: true, trim: true },
+  email:     { type: String, required: true, trim: true },
+  message:   { type: String, required: true },
+  read:      { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+})
+const Message = mongoose.model('Message', MessageSchema)
+
+// ── Nodemailer Transporter ──────────────────────────────
+// Uses Gmail SMTP — you need to allow "App Passwords" in your Google account
+// Go to: myaccount.google.com → Security → 2-Step Verification → App Passwords
+// Generate an App Password for "Mail" and put it in .env as MAIL_PASS
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.MAIL_USER,   // ← YOUR Gmail: e.g. shubhamthakor2005@gmail.com
+    pass: process.env.MAIL_PASS,   // ← YOUR Gmail App Password (NOT your login password)
+  },
+})
+
+// ── Send Email helper ───────────────────────────────────
+async function sendEmail(name, email, message) {
+  // Email that arrives in YOUR inbox
+  const mailToMe = {
+    from:    `"Portfolio Contact" <${process.env.MAIL_USER}>`,
+    to:      process.env.MAIL_USER,   // receives at your own email
+    subject: `📩 New Portfolio Message from ${name}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9fafb;border-radius:12px;">
+        <h2 style="color:#7c3aed;margin-bottom:4px;">New Message — Portfolio</h2>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;"/>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+        <p style="margin-top:16px;"><strong>Message:</strong></p>
+        <div style="background:#fff;padding:16px;border-radius:8px;border-left:4px solid #7c3aed;margin-top:8px;">
+          ${message.replace(/\n/g,'<br/>')}
+        </div>
+        <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Sent from your portfolio contact form.</p>
+      </div>
+    `,
+  }
+
+  // Auto-reply that the sender receives
+  const mailToSender = {
+    from:    `"Shubham Thakor" <${process.env.MAIL_USER}>`,
+    to:      email,
+    subject: `Thanks for reaching out, ${name}! 👋`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9fafb;border-radius:12px;">
+        <h2 style="color:#7c3aed;">Hey ${name}! 👋</h2>
+        <p style="color:#374151;line-height:1.7;">
+          Thanks for reaching out through my portfolio! I've received your message and 
+          will get back to you as soon as possible — usually within 24 hours.
+        </p>
+        <div style="background:#fff;padding:16px;border-radius:8px;border-left:4px solid #06b6d4;margin:20px 0;">
+          <p style="color:#6b7280;font-size:13px;margin:0;"><em>Your message:</em></p>
+          <p style="color:#374151;margin:8px 0 0;">${message.replace(/\n/g,'<br/>')}</p>
+        </div>
+        <p style="color:#374151;">
+          In the meantime, feel free to check out my work:<br/>
+          🐙 <a href="https://github.com/shubhamthakor" style="color:#7c3aed;">GitHub</a> &nbsp;·&nbsp;
+          💼 <a href="https://linkedin.com/in/Shubham-Thakor" style="color:#7c3aed;">LinkedIn</a>
+        </p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
+        <p style="font-size:13px;color:#9ca3af;">
+          Shubham Thakor · MERN Stack Developer · Khambhat, Gujarat, India
+        </p>
+      </div>
+    `,
+  }
+
+  await transporter.sendMail(mailToMe)
+  await transporter.sendMail(mailToSender)
+}
+
+// ── API Routes ──────────────────────────────────────────
+
+// POST /api/contact — save message to DB + send emails
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, message } = req.body
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: 'All fields are required.' })
+    }
+
+    // 1. Save to MongoDB
+    const msg = await Message.create({ name, email, message })
+
+    // 2. Send emails (async — don't fail request if email fails)
+    try {
+      await sendEmail(name, email, message)
+      console.log(`📧 Email sent for message from ${name} <${email}>`)
+    } catch (emailErr) {
+      console.error('⚠️  Email sending failed (message saved to DB):', emailErr.message)
+    }
+
+    res.status(201).json({ success: true, id: msg._id })
+  } catch (err) {
+    console.error('❌ Contact error:', err)
+    res.status(500).json({ error: 'Server error. Please try again.' })
+  }
+})
+
+// GET /api/contact — fetch all messages (admin)
+app.get('/api/contact', async (req, res) => {
+  try {
+    const messages = await Message.find().sort({ createdAt: -1 })
+    res.json(messages)
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' })
+  }
+})
+
+// PATCH /api/contact/:id/read — mark as read
+app.patch('/api/contact/:id/read', async (req, res) => {
+  try {
+    const msg = await Message.findByIdAndUpdate(req.params.id, { read: true }, { new: true })
+    res.json(msg)
+  } catch {
+    res.status(500).json({ error: 'Server error.' })
+  }
+})
+
+// DELETE /api/contact/:id
+app.delete('/api/contact/:id', async (req, res) => {
+  try {
+    await Message.findByIdAndDelete(req.params.id)
+    res.json({ success: true })
+  } catch {
+    res.status(500).json({ error: 'Server error.' })
+  }
+})
+
+app.get('/', (req, res) => res.json({ status: 'Portfolio backend running ✅' }))
+
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`🚀 Backend running on http://localhost:${PORT}`))
