@@ -1,5 +1,4 @@
 const express  = require('express')
-const mongoose = require('mongoose')
 const cors     = require('cors')
 const nodemailer = require('nodemailer')
 require('dotenv').config()
@@ -19,20 +18,7 @@ app.use(
 )
 app.use(express.json())
 
-// ── MongoDB ─────────────────────────────────────────────
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/portfolio')
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB error:', err))
 
-// ── Message Model ───────────────────────────────────────
-const MessageSchema = new mongoose.Schema({
-  name:      { type: String, required: true, trim: true },
-  email:     { type: String, required: true, trim: true },
-  message:   { type: String, required: true },
-  read:      { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-})
-const Message = mongoose.model('Message', MessageSchema)
 
 // ── Nodemailer Transporter ──────────────────────────────
 // Uses Gmail SMTP — you need to allow "App Passwords" in your Google account
