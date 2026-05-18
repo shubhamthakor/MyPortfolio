@@ -1,5 +1,5 @@
-const express  = require('express')
-const cors     = require('cors')
+const express = require('express')
+const cors = require('cors')
 const nodemailer = require('nodemailer')
 require('dotenv').config()
 
@@ -13,14 +13,10 @@ app.use(
     credentials: true,
   })
 )
+
 app.use(express.json())
 
-
-
 // ── Nodemailer Transporter ──────────────────────────────
-// Uses Gmail SMTP — you need to allow "App Passwords" in your Google account
-// Go to: myaccount.google.com → Security → 2-Step Verification → App Passwords
-// Generate an App Password for "Mail" and put it in .env as MAIL_PASS
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -34,66 +30,43 @@ const transporter = nodemailer.createTransport({
 
 // ── Send Email helper ───────────────────────────────────
 async function sendEmail(name, email, message) {
-  // Email that arrives in YOUR inbox
+  // Mail to you
   const mailToMe = {
-    from:    `"Portfolio Contact" <${process.env.MAIL_USER}>`,
-    to:      process.env.MAIL_USER,   // receives at your own email
+    from: `"Portfolio Contact" <${process.env.MAIL_USER}>`,
+    to: process.env.MAIL_USER,
     subject: `📩 New Portfolio Message from ${name}`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9fafb;border-radius:12px;">
-        <h2 style="color:#7c3aed;margin-bottom:4px;">New Message — Portfolio</h2>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;"/>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-        <p style="margin-top:16px;"><strong>Message:</strong></p>
-        <div style="background:#fff;padding:16px;border-radius:8px;border-left:4px solid #7c3aed;margin-top:8px;">
-          ${message.replace(/\n/g,'<br/>')}
-        </div>
-        <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Sent from your portfolio contact form.</p>
-      </div>
+      <h2>New Portfolio Message</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message}</p>
     `,
   }
-}
 
-  // Auto-reply that the sender receives
+  // Auto reply
   const mailToSender = {
-    from:    `"Shubham Thakor" <${process.env.MAIL_USER}>`,
-    to:      email,
+    from: `"Shubham Thakor" <${process.env.MAIL_USER}>`,
+    to: email,
     subject: `Thanks for reaching out, ${name}! 👋`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9fafb;border-radius:12px;">
-        <h2 style="color:#7c3aed;">Hey ${name}! 👋</h2>
-        <p style="color:#374151;line-height:1.7;">
-          Thanks for reaching out through my portfolio! I've received your message and 
-          will get back to you as soon as possible — usually within 24 hours.
-        </p>
-        <div style="background:#fff;padding:16px;border-radius:8px;border-left:4px solid #06b6d4;margin:20px 0;">
-          <p style="color:#6b7280;font-size:13px;margin:0;"><em>Your message:</em></p>
-          <p style="color:#374151;margin:8px 0 0;">${message.replace(/\n/g,'<br/>')}</p>
-        </div>
-        <p style="color:#374151;">
-          In the meantime, feel free to check out my work:<br/>
-          🐙 <a href="https://github.com/shubhamthakor" style="color:#7c3aed;">GitHub</a> &nbsp;·&nbsp;
-          💼 <a href="https://linkedin.com/in/Shubham-Thakor" style="color:#7c3aed;">LinkedIn</a>
-        </p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
-        <p style="font-size:13px;color:#9ca3af;">
-          Shubham Thakor · MERN Stack Developer · Khambhat, Gujarat, India
-        </p>
-      </div>
+      <h2>Hey ${name} 👋</h2>
+      <p>Thanks for contacting me. I received your message successfully.</p>
     `,
   }
 
   try {
-  const info1 = await transporter.sendMail(mailToMe)
-  console.log('✅ Mail to owner sent:', info1.response)
+    const info1 = await transporter.sendMail(mailToMe)
+    console.log('✅ Mail to owner sent:', info1.response)
 
-  const info2 = await transporter.sendMail(mailToSender)
-  console.log('✅ Auto reply sent:', info2.response)
-} catch (err) {
-  console.error('❌ Mail sending failed:', err)
+    const info2 = await transporter.sendMail(mailToSender)
+    console.log('✅ Auto reply sent:', info2.response)
+  } catch (err) {
+    console.error('❌ Mail sending failed:', err.message)
+  }
 }
 
+// ── Contact Route ───────────────────────────────────────
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, message } = req.body
@@ -104,6 +77,7 @@ app.post('/api/contact', async (req, res) => {
       })
     }
 
+    // Send email in background
     sendEmail(name, email, message).catch(err =>
       console.error('❌ Email error:', err.message)
     )
@@ -120,9 +94,15 @@ app.post('/api/contact', async (req, res) => {
     })
   }
 })
-   
 
-app.get('/', (req, res) => res.json({ status: 'Portfolio backend running ✅' }))
+// ── Root Route ──────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.json({ status: 'Portfolio backend running ✅' })
+})
 
+// ── Server ──────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`🚀 Backend running on http://localhost:${PORT}`))
+
+app.listen(PORT, () => {
+  console.log(`🚀 Backend running on http://localhost:${PORT}`)
+})
