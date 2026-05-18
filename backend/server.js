@@ -83,11 +83,14 @@ async function sendEmail(name, email, message) {
     `,
   }
 
+  try {
   const info1 = await transporter.sendMail(mailToMe)
-console.log('✅ Mail to owner sent:', info1.response)
+  console.log('✅ Mail to owner sent:', info1.response)
 
-const info2 = await transporter.sendMail(mailToSender)
-console.log('✅ Auto reply sent:', info2.response)
+  const info2 = await transporter.sendMail(mailToSender)
+  console.log('✅ Auto reply sent:', info2.response)
+} catch (err) {
+  console.error('❌ Mail sending failed:', err)
 }
 
 app.post('/api/contact', async (req, res) => {
