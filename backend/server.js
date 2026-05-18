@@ -53,6 +53,7 @@ async function sendEmail(name, email, message) {
       </div>
     `,
   }
+}
 
   // Auto-reply that the sender receives
   const mailToSender = {
