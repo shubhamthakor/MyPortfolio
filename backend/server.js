@@ -89,22 +89,18 @@ async function sendEmail(name, email, message) {
 
 app.post('/api/contact', async (req, res) => {
   try {
+    console.log('✅ Contact route hit')
+
     const { name, email, message } = req.body
 
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        error: 'All fields are required',
-      })
-    }
-
-    await sendEmail(name, email, message)
+    console.log(name, email, message)
 
     return res.status(200).json({
       success: true,
-      message: 'Message sent successfully',
+      message: 'API working',
     })
   } catch (err) {
-    console.error('❌ Contact error:', err.message)
+    console.error('❌ Contact error:', err)
 
     return res.status(500).json({
       error: err.message,
