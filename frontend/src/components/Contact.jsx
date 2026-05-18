@@ -11,40 +11,47 @@ export default function Contact() {
   const [form, setForm]     = useState({ name: '', email: '', message: '' })
   const [status, setStatus] = useState('')   // 'success' | 'error' | ''
   const [loading, setLoading] = useState(false)
-
+  
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo('.contact-left',
         { opacity: 0, x: -50 },
         { opacity: 1, x: 0, duration: 1, ease: 'power4.out',
           scrollTrigger: { trigger: ref.current, start: 'top 75%' } }
-      )
-      gsap.fromTo('.contact-right',
-        { opacity: 0, x: 50 },
-        { opacity: 1, x: 0, duration: 1, ease: 'power4.out',
-          scrollTrigger: { trigger: ref.current, start: 'top 75%' } }
-      )
-    }, ref)
-    return () => ctx.revert()
-  }, [])
-
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
-
-  const handleSubmit = async e => {
-    e.preventDefault()
-    setLoading(true)
-    setStatus('')
-    try {
-      await axios.post('http://localhost:5000/api/contact', form)
-      setStatus('success')
-      setForm({ name: '', email: '', message: '' })
-    } catch {
-      setStatus('error')
-    } finally {
-      setLoading(false)
-    }
+        )
+        gsap.fromTo('.contact-right',
+          { opacity: 0, x: 50 },
+          { opacity: 1, x: 0, duration: 1, ease: 'power4.out',
+            scrollTrigger: { trigger: ref.current, start: 'top 75%' } }
+          )
+        }, ref)
+        return () => ctx.revert()
+      }, [])
+      
+      const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
+      
+      
+      const handleSubmit = async (e) => {
+        e.preventDefault()
+        setLoading(true)
+        setStatus('')
+        
+        const API_URL = import.meta.env.VITE_API_URL
+        try {
+          await axios.post(`${API_URL}/api/contact`, form)
+          
+          setStatus('success')
+          setForm({
+            name: '',
+            email: '',
+            message: '',
+          })
+        } catch {
+          setStatus('error')
+  } finally {
+    setLoading(false)
   }
-
+}
   const INFO = [
     { icon: <FiPhone />,    label: 'Phone',    val: '+91 6354313082',              color: '#7c3aed' },
     { icon: <FiMail />,     label: 'Email',    val: 'shubhamthakor2005@gmail.com', color: '#06b6d4' },
