@@ -97,7 +97,9 @@ app.post('/api/contact', async (req, res) => {
       })
     }
 
-    await sendEmail(name, email, message)
+    sendEmail(name, email, message).catch(err =>
+      console.error('❌ Email error:', err.message)
+    )
 
     return res.status(200).json({
       success: true,
