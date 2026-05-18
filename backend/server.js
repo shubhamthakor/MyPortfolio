@@ -6,13 +6,21 @@ require('dotenv').config()
 const app = express()
 
 // ── Middleware ──────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://my-portfolio-sand-chi-31.vercel.app'
+]
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      process.env.FRONTEND_URL,
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   })
 )
