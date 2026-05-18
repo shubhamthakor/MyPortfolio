@@ -83,8 +83,11 @@ async function sendEmail(name, email, message) {
     `,
   }
 
-  await transporter.sendMail(mailToMe)
-  await transporter.sendMail(mailToSender)
+  const info1 = await transporter.sendMail(mailToMe)
+console.log('✅ Mail to owner sent:', info1.response)
+
+const info2 = await transporter.sendMail(mailToSender)
+console.log('✅ Auto reply sent:', info2.response)
 }
 
 app.post('/api/contact', async (req, res) => {
