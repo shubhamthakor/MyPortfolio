@@ -36,6 +36,7 @@ export default function Contact() {
         setLoading(true)
         setStatus('')
         
+
         try {
           await axios.post(`${import.meta.env.VITE_API_URL}/api/contact`, form)
           

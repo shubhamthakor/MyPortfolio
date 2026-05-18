@@ -6,21 +6,13 @@ require('dotenv').config()
 const app = express()
 
 // ── Middleware ──────────────────────────────────────────
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://my-portfolio-sand-chi-31.vercel.app'
-]
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.FRONTEND_URL,
+    ],
     credentials: true,
   })
 )
@@ -95,64 +87,32 @@ async function sendEmail(name, email, message) {
   await transporter.sendMail(mailToSender)
 }
 
-// ── API Routes ──────────────────────────────────────────
-
-// POST /api/contact — save message to DB + send emails
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, message } = req.body
 
     if (!name || !email || !message) {
-      return res.status(400).json({ error: 'All fields are required.' })
+      return res.status(400).json({
+        error: 'All fields are required',
+      })
     }
 
-    // 1. Save to MongoDB
-    const msg = await Message.create({ name, email, message })
+    // Send email
+    await sendEmail(name, email, message)
 
-    // 2. Send emails (async — don't fail request if email fails)
-    try {
-      await sendEmail(name, email, message)
-      console.log(`📧 Email sent for message from ${name} <${email}>`)
-    } catch (emailErr) {
-      console.error('⚠️  Email sending failed (message saved to DB):', emailErr.message)
-    }
-
-    res.status(201).json({ success: true, id: msg._id })
+    res.status(200).json({
+      success: true,
+      message: 'Message sent successfully',
+    })
   } catch (err) {
     console.error('❌ Contact error:', err)
-    res.status(500).json({ error: 'Server error. Please try again.' })
-  }
-})
 
-// GET /api/contact — fetch all messages (admin)
-app.get('/api/contact', async (req, res) => {
-  try {
-    const messages = await Message.find().sort({ createdAt: -1 })
-    res.json(messages)
-  } catch (err) {
-    res.status(500).json({ error: 'Server error.' })
+    res.status(500).json({
+      error: 'Server error',
+    })
   }
 })
-
-// PATCH /api/contact/:id/read — mark as read
-app.patch('/api/contact/:id/read', async (req, res) => {
-  try {
-    const msg = await Message.findByIdAndUpdate(req.params.id, { read: true }, { new: true })
-    res.json(msg)
-  } catch {
-    res.status(500).json({ error: 'Server error.' })
-  }
-})
-
-// DELETE /api/contact/:id
-app.delete('/api/contact/:id', async (req, res) => {
-  try {
-    await Message.findByIdAndDelete(req.params.id)
-    res.json({ success: true })
-  } catch {
-    res.status(500).json({ error: 'Server error.' })
-  }
-})
+   
 
 app.get('/', (req, res) => res.json({ status: 'Portfolio backend running ✅' }))
 
