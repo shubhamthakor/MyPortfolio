@@ -22,11 +22,14 @@ app.use(express.json())
 // Go to: myaccount.google.com → Security → 2-Step Verification → App Passwords
 // Generate an App Password for "Mail" and put it in .env as MAIL_PASS
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.MAIL_USER,   // ← YOUR Gmail: e.g. shubhamthakor2005@gmail.com
-    pass: process.env.MAIL_PASS,   // ← YOUR Gmail App Password (NOT your login password)
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
   },
+  connectionTimeout: 10000,
 })
 
 // ── Send Email helper ───────────────────────────────────
