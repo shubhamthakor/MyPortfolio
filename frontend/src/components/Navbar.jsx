@@ -29,7 +29,7 @@ export default function Navbar() {
 
   const SOCIALS = [
     { icon: <FiGithub />,   href: 'https://github.com/shubhamthakor' },
-    { icon: <FiLinkedin />, href: 'https://linkedin.com/in/Shubham-Thakor' },
+    { icon: <FiLinkedin />, href: 'https://www.linkedin.com/in/shubham-thakor-94a44b40a/' },
     { icon: <FiMail />,     href: 'mailto:shubhamthakor2005@gmail.com' },
   ]
 
