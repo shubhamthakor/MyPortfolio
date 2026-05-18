@@ -8,11 +8,8 @@ const app = express()
 // ── Middleware ──────────────────────────────────────────
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      process.env.FRONTEND_URL,
-    ],
+    origin: process.env.FRONTEND_URL,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   })
 )
@@ -89,18 +86,22 @@ async function sendEmail(name, email, message) {
 
 app.post('/api/contact', async (req, res) => {
   try {
-    console.log('✅ Contact route hit')
-
     const { name, email, message } = req.body
 
-    console.log(name, email, message)
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        error: 'All fields are required',
+      })
+    }
+
+    await sendEmail(name, email, message)
 
     return res.status(200).json({
       success: true,
-      message: 'API working',
+      message: 'Message sent successfully',
     })
   } catch (err) {
-    console.error('❌ Contact error:', err)
+    console.error('❌ Contact error:', err.message)
 
     return res.status(500).json({
       error: err.message,
